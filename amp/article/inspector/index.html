@@ -1,0 +1,186 @@
+<!doctype html>
+<meta charset=utf-8>
+<title>inspector</title>
+
+<style>
+html{background:#333}
+</style>
+
+<!-- <script src="lib/monkey keycodes.js"></script> -->
+<script>
+
+var $DeviceSerialNumber = '*'
+
+var hook = {emit:function(event, data){
+  console.log(data)
+}}
+if (top.commands && top.commands.hook) initWithHook(top.commands.hook)
+
+function initWithHook(_hook){
+  hook = _hook
+  hook.on('android-devices::connections::changed', function(connections){
+    var html = ''
+    connections = connections.split(',')
+    connections.unshift('*')
+    for (var index=-1, serial; serial = connections[++index];) {
+      html += '<option value=' + serial + (serial == $DeviceSerialNumber ?' selected':'') +'>'
+            +   serial
+            + '</option>'
+    }
+    $DeviceSerialNumberSelect.innerHTML = html
+  })
+}
+
+monkey.shouldRecord = true
+monkey.shouldDoItLive = true
+function monkey(command){
+  if (Array.isArray(command)) command = command.join('\n');
+  weakMonkey(command)
+  if (monkey.shouldDoItLive) strongMonkey(command)
+}
+
+function strongMonkey(command){
+  hook.emit('monkey::' + $DeviceSerialNumber + '::do', command);
+}
+
+weakMonkey.MAX_TIMEOUT = 1000
+function weakMonkey(command){
+  if (!monkey.shouldRecord) return;
+  
+  var sleepTime = 0
+  if (weakMonkey._timeStamp) sleepTime = Date.now() - weakMonkey._timeStamp
+  weakMonkey._timeStamp = Date.now()
+  if (sleepTime > weakMonkey.MAX_TIMEOUT) sleepTime = weakMonkey.MAX_TIMEOUT
+  
+  if (sleepTime) commandText.value += 'sleep ' + sleepTime + '\n';
+  commandText.value += command + '\n'
+}
+
+function reverseMonkey(){
+  commandText.value = commandText.value.split('\n').reverse().join('\n').replace(/(down|up)\b/gi, function(string){
+    if (string == 'up') return 'down'
+    if (string == 'down') return 'up'
+    if (string == 'UP') return 'DOWN'
+    if (string == 'DOWN') return 'UP'
+  })
+}
+function fasterMonkey(){
+  commandText.value = commandText.value.replace(/\b(sleep\s+)(\d+(?:\.\d+)?)/g, function(match, text, sleepNumber){
+    return text + (+sleepNumber / 2)
+  })
+}
+function slowerMonkey(){
+  commandText.value = commandText.value.replace(/\b(sleep\s+)(\d+(?:\.\d+)?)/g, function(match, text, sleepNumber){
+    return text + (+sleepNumber * 2)
+  })
+}
+
+monkeyKey.CommandForKeyId = {
+  "Up":"press KEYCODE_DPAD_UP",
+  "Down":"press KEYCODE_DPAD_DOWN",
+  "Left":"press KEYCODE_DPAD_LEFT",
+  "Right":"press KEYCODE_DPAD_RIGHT",
+  "U+0020"/*space*/:"press KEYCODE_DPAD_CENTER",
+  "Enter":"press KEYCODE_DPAD_CENTER",
+  "U+0008"/*backspace*/:"press KEYCODE_BACK",
+}
+function monkeyKey(keyIdentifier){
+  var command = monkeyKey.CommandForKeyId[keyIdentifier]
+  if (!command) return false
+  strongMonkey(command)
+  return true
+}
+
+</script>
+
+<section style="display:inline-block; text-align:center; color:white">
+  
+  <label><select id=$DeviceSerialNumberSelect onchange="$DeviceSerialNumber = value"></select> Device Serial Number</label><br>
+  <label><input type=checkbox checked onchange="monkey.shouldRecord = checked"> Record?!</label>
+  <label><input type=checkbox checked onchange="monkey.shouldDoItLive = checked"> Do It Live?!</label>
+  
+  
+  <div>
+    <button onclick="monkey('press KEYCODE_BACK')" title=Back>⬅</button>
+    <button onclick="monkey('press KEYCODE_HOME')" title=Home>🏠</button>
+    <button onclick="monkey('press KEYCODE_MENU')" title=Menu>🎨</button>
+    <button onclick="monkey('press KEYCODE_APP_SWITCH')">App Switch</button>
+    <br>
+    <button onclick="monkey('press KEYCODE_TAB')" title=tab>⇥</button>
+    <button onclick="monkey('press KEYCODE_ENTER')" title=enter>↩</button>
+    <br>
+    <button onclick="monkey('press KEYCODE_TAB')" title=tab>⇥</button>
+    <button onclick="monkey('press KEYCODE_DEL')" title="Backspace">Backspace</button>
+    <br>
+    <button onclick="monkey('press KEYCODE_DPAD_UP')" title="Up">Up</button>
+    <button onclick="monkey('touch down 255 197;sleep 10;touch move 255 198;sleep 16;touch move 255 214;sleep 15;touch move 259 234;sleep 17;touch move 259 257;sleep 16;touch move 258 284;sleep 17;touch move 258 314;sleep 17;touch move 258 358;sleep 17;touch move 256 439;sleep 16;touch move 256 555;sleep 16;touch move 256 670;sleep 15;touch move 256 750;sleep 17;touch move 256 800;sleep 17;touch move 255 838;sleep 17;touch move 254 859;sleep 16;touch move 252 868;sleep 16;touch move 252 869;sleep 16;touch move 251 869;sleep 17;touch move 250 867;sleep 7;touch move 248 866;sleep 8;touch up 247 863;'.split(';'))">Drag down</button>
+    <button onclick="monkey('touch down 384 628;sleep 0.5;touch move 384 629;sleep 8.5;touch move 386 667;sleep 8.5;touch move 386 709;sleep 8.5;touch move 385 757;sleep 8;touch move 384 813;sleep 8.5;touch move 383 868;sleep 8;touch move 383 916;sleep 8;touch move 384 961;sleep 7.5;touch move 384 1002;sleep 3.5;touch up 386 1033;'.split(';'))">Fling down</button>
+    <br>
+    <button onclick="monkey('press KEYCODE_DPAD_LEFT')" title="Left">Left</button>
+    <button onclick="monkey('press KEYCODE_DPAD_CENTER')" title="Center">Center</button>
+    <button onclick="monkey('press KEYCODE_DPAD_RIGHT')" title="Right">Right</button>
+    <br>
+    <button onclick="monkey('press KEYCODE_DPAD_DOWN')" title="Down">Down</button>
+    <button onclick="monkey('touch down 247 863;sleep 8;touch move 248 866;sleep 7;touch move 250 867;sleep 17;touch move 251 869;sleep 16;touch move 252 869;sleep 16;touch move 252 868;sleep 16;touch move 254 859;sleep 17;touch move 255 838;sleep 17;touch move 256 800;sleep 17;touch move 256 750;sleep 15;touch move 256 670;sleep 16;touch move 256 555;sleep 16;touch move 256 439;sleep 17;touch move 258 358;sleep 17;touch move 258 314;sleep 17;touch move 258 284;sleep 16;touch move 259 257;sleep 17;touch move 259 234;sleep 15;touch move 255 214;sleep 16;touch move 255 198;sleep 10;touch up 255 197;'.split(';'))">Drag up</button>
+  </div>
+
+  <form onsubmit="monkey('type ' + text_to_type.value); return false"><input name=text_to_type></form>
+
+
+<form onsubmit="strongMonkey(text_to_type.value); return false">
+  <textarea style="font-size:8px; height:550px" id=commandText autofocus cols=50 name=text_to_type># Type monkey commands here!
+wake
+</textarea><br>
+  <input type=submit value=Run!>
+  <input accesskey=k type=reset value=Clear>
+  <input type=button value=Reverse onclick="reverseMonkey() ;return false;">
+  <input type=button value=Faster onclick="fasterMonkey() ;return false;">
+  <input type=button value=Slower onclick="slowerMonkey() ;return false;">
+</form>
+
+</section>
+
+<div style="background:#eee; display:inline-block; vertical-align:top" tabindex=0
+  onkeydown="return !monkeyKey(event.keyIdentifier)"
+>
+  <img style="position:relative; background:#555" height=320 width=240 alt="Click and drag here to send touches"
+    onmouseout="
+      this._down && onmouseup(event)
+    "
+    onmousedown="
+      monkey('touch down ' + event.offsetX + ' ' + event.offsetY);
+      this._down = true;
+    "
+    onmousemove="
+      if (!this._down) return
+      monkey('touch move ' + event.offsetX + ' ' + event.offsetY);
+    "
+    onmouseup="
+      monkey('touch up ' + event.offsetX + ' ' + event.offsetY);
+      this._down = false
+    "
+  >
+  <footer style="text-align:center">
+    <button onclick="monkey('press KEYCODE_BACK')" title=Back>⬅</button>
+    <button onclick="monkey('press KEYCODE_HOME')" title=Home>🏠</button>
+    <button onclick="monkey('press KEYCODE_MENU')" title=Menu>🎨</button>
+  </footer>
+</div>
+
+<img style="position:absolute; top:0; right:0; background:#555" height=640 width=360 alt="Click and drag here to send touches"
+  onmouseout="
+    this._down && onmouseup(event)
+  "
+  onmousedown="
+    monkey('touch down ' + (event.offsetX*2) + ' ' + (event.offsetY*2));
+    this._down = true;
+  "
+  onmousemove="
+    if (!this._down) return
+    monkey('touch move ' + (event.offsetX*2) + ' ' + (event.offsetY*2));
+  "
+  onmouseup="
+    monkey('touch up ' + (event.offsetX*2) + ' ' + (event.offsetY*2));
+    this._down = false
+  "
+>
